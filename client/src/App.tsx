@@ -23,7 +23,7 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType>({
   role: 'admin',
   setRole: () => {},
-  darkMode: false,
+  darkMode: true,
   toggleDarkMode: () => {},
   sidebarCollapsed: false,
   setSidebarCollapsed: () => {},
@@ -33,19 +33,14 @@ export const useAppContext = () => useContext(AppContext)
 
 export default function App() {
   const [role, setRole] = useState<Role>('admin')
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-    return false
-  })
+  const [darkMode, setDarkMode] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const toggleDarkMode = () => setDarkMode(d => !d)
 
   return (
     <AppContext.Provider value={{ role, setRole, darkMode, toggleDarkMode, sidebarCollapsed, setSidebarCollapsed }}>
-      <div className={darkMode ? 'dark' : ''}>
+      <div className={darkMode ? '' : 'light-mode'}>
         <Layout>
           <Routes>
             <Route path="/" element={<Chat />} />

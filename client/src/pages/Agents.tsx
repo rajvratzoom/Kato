@@ -22,100 +22,82 @@ export default function Agents() {
   const toggleAgent = async (agentId: string, currentStatus: string) => {
     setToggling(agentId)
     try {
-      await apiPatch(`/agents/${agentId}/status`, {
-        status: currentStatus === 'active' ? 'inactive' : 'active',
-      })
+      await apiPatch(`/agents/${agentId}/status`, { status: currentStatus === 'active' ? 'inactive' : 'active' })
       refetch()
-    } finally {
-      setToggling(null)
-    }
+    } finally { setToggling(null) }
   }
 
-  if (loading) return <div className="animate-pulse"><div className="h-8 w-32 bg-gray-200 dark:bg-gray-800 rounded mb-8" /><div className="grid grid-cols-2 gap-6">{[1,2].map(i => <div key={i} className="h-80 bg-gray-200 dark:bg-gray-800 rounded-xl" />)}</div></div>
+  if (loading) return <div style={{ padding: '20px 28px' }}><div style={{ height: 20, width: 80, background: 'var(--surface)', borderRadius: 4 }} /></div>
 
   return (
-    <div className="px-8 py-6 max-w-[1400px]">
-      <div className="mb-8">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Your Interns</h1>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Meet your AI team members</p>
-      </div>
+    <div style={{ padding: '20px 28px', maxWidth: 1100 }}>
+      <h1 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>Agents</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
         {agents?.map(agent => (
-          <div key={agent.id} className={`card p-6 ${agent.status === 'inactive' ? 'opacity-60' : ''}`}>
+          <div key={agent.id} className="card" style={{ padding: 16, opacity: agent.status === 'inactive' ? 0.5 : 1 }}>
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${
-                  agent.type === 'research'
-                    ? 'bg-blue-100 dark:bg-blue-900/30'
-                    : 'bg-purple-100 dark:bg-purple-900/30'
-                }`}>
-                  {agent.avatar}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{agent.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">{agent.status}</span>
-                  </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: agent.status === 'active' ? '#34d399' : 'var(--text-muted)' }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{agent.name}</span>
                 </div>
               </div>
               {role === 'admin' && (
                 <button
                   onClick={() => toggleAgent(agent.id, agent.status)}
                   disabled={toggling === agent.id}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    agent.status === 'active' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                  style={{
+                    width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                    background: agent.status === 'active' ? '#34d399' : 'var(--border)',
+                    position: 'relative', transition: 'background 0.2s',
+                  }}
                 >
-                  <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow-sm ${
-                    agent.status === 'active' ? 'translate-x-6' : 'translate-x-0.5'
-                  }`} />
+                  <div style={{
+                    width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: 2, transition: 'left 0.2s',
+                    left: agent.status === 'active' ? 18 : 2,
+                  }} />
                 </button>
               )}
             </div>
 
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{agent.description}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.4 }}>{agent.description}</p>
 
             {/* Capabilities */}
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Capabilities</p>
-              <div className="flex flex-wrap gap-2">
-                {agent.capabilities.map(cap => (
-                  <span key={cap} className="badge badge-gray text-xs">{cap.replace(/_/g, ' ')}</span>
-                ))}
-              </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+              {agent.capabilities.map(cap => (
+                <span key={cap} style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'var(--hover-bg)', color: 'var(--text-muted)' }}>
+                  {cap.replace(/_/g, ' ')}
+                </span>
+              ))}
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-6 mb-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 16, paddingTop: 10, borderTop: '1px solid var(--border)', marginBottom: agent.recentTasks.length > 0 ? 10 : 0 }}>
               <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{agent.taskCount}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Tasks handled</p>
+                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{agent.taskCount}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>tasks</span>
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {agent.recentTasks.filter((t: any) => t.status === 'completed').length}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>completed</span>
               </div>
             </div>
 
             {/* Recent tasks */}
             {agent.recentTasks.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Recent Tasks</p>
-                <div className="space-y-2">
-                  {agent.recentTasks.slice(0, 3).map((t: any) => (
-                    <div key={t.id} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{t.task}</span>
-                      <span className={`badge ml-2 ${t.status === 'completed' ? 'badge-green' : t.status === 'failed' ? 'badge-red' : 'badge-yellow'}`}>
-                        {t.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Recent</div>
+                {agent.recentTasks.slice(0, 3).map((t: any) => (
+                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>{t.task}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{t.status}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

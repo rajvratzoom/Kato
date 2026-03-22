@@ -12,10 +12,9 @@ export default function AdminConsole() {
 
   if (role !== 'admin' && role !== 'manager') {
     return (
-      <div className="text-center py-20">
-        <p className="text-4xl mb-4">🔒</p>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
-        <p className="text-gray-500 dark:text-gray-400">You need Admin or Manager role to access the Admin Console</p>
+      <div style={{ textAlign: 'center', padding: 80 }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Access Denied</p>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Admin or Manager role required</p>
       </div>
     )
   }
@@ -36,164 +35,143 @@ export default function AdminConsole() {
   }
 
   const TABS = [
-    { id: 'agents' as const, label: 'Agents', icon: '🤖' },
-    { id: 'integrations' as const, label: 'Integrations', icon: '🔗' },
-    { id: 'roles' as const, label: 'Users & Roles', icon: '👥' },
+    { id: 'agents' as const, label: 'Agents' },
+    { id: 'integrations' as const, label: 'Integrations' },
+    { id: 'roles' as const, label: 'Users & Roles' },
   ]
 
   return (
-    <div className="px-8 py-6 max-w-[1400px]">
-      <div className="mb-8">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Admin Console</h1>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Manage agents, integrations, and access control</p>
-      </div>
+    <div style={{ padding: '20px 28px', maxWidth: 1100 }}>
+      <h1 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>Admin</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-fit">
+      <div style={{ display: 'flex', gap: 2, marginBottom: 16, background: 'var(--hover-bg)', borderRadius: 6, padding: 2, width: 'fit-content' }}>
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              tab === t.id
-                ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            style={{
+              padding: '5px 14px', borderRadius: 4, fontSize: 13, fontWeight: 500,
+              border: 'none', cursor: 'pointer',
+              background: tab === t.id ? 'var(--surface)' : 'transparent',
+              color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
+            }}
           >
-            <span>{t.icon}</span> {t.label}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Agents tab */}
+      {/* Agents */}
       {tab === 'agents' && (
         <div className="card">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Agent Management</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Activate or deactivate agents</p>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {agents?.map((agent: any) => (
-              <div key={agent.id} className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{agent.avatar}</span>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{agent.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{agent.taskCount} tasks handled</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`badge ${agent.status === 'active' ? 'badge-green' : 'badge-red'}`}>{agent.status}</span>
-                  {role === 'admin' && (
-                    <button
-                      onClick={() => toggleAgent(agent.id, agent.status)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${agent.status === 'active' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow-sm ${agent.status === 'active' ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                    </button>
-                  )}
-                </div>
+          {agents?.map((agent: any, i: number) => (
+            <div key={agent.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 16px',
+              borderBottom: i < (agents?.length || 0) - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{agent.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{agent.taskCount} tasks</div>
               </div>
-            ))}
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{agent.status}</span>
+                {role === 'admin' && (
+                  <button
+                    onClick={() => toggleAgent(agent.id, agent.status)}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                      background: agent.status === 'active' ? '#34d399' : 'var(--border)',
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: agent.status === 'active' ? 18 : 2, transition: 'left 0.2s' }} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Integrations tab */}
+      {/* Integrations */}
       {tab === 'integrations' && (
         <div className="card">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Integration Management</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Connect or disconnect integrations</p>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {integrations?.map((integration: any) => (
-              <div key={integration.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{integration.icon}</span>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{integration.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{integration.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`badge ${integration.status === 'connected' ? 'badge-green' : 'badge-gray'}`}>
-                      {integration.status}
-                    </span>
-                    {role === 'admin' && (
-                      <button
-                        onClick={() => toggleIntegration(integration.id, integration.status)}
-                        className={`relative w-12 h-6 rounded-full transition-colors ${integration.status === 'connected' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                      >
-                        <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow-sm ${integration.status === 'connected' ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                      </button>
-                    )}
-                  </div>
+          {integrations?.map((intg: any, i: number) => (
+            <div key={intg.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 16px',
+              borderBottom: i < (integrations?.length || 0) - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{intg.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{intg.description}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{intg.status}</span>
+                {role === 'admin' && (
+                  <button
+                    onClick={() => toggleIntegration(intg.id, intg.status)}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                      background: intg.status === 'connected' ? '#34d399' : 'var(--border)',
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: intg.status === 'connected' ? 18 : 2, transition: 'left 0.2s' }} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Roles */}
+      {tab === 'roles' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="card">
+            {users?.map((user: any, i: number) => (
+              <div key={user.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 16px',
+                borderBottom: i < (users?.length || 0) - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{user.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
                 </div>
-                {/* Agent assignments */}
-                {integration.agents?.length > 0 && (
-                  <div className="mt-2 ml-11 flex gap-2">
-                    <span className="text-xs text-gray-400">Used by:</span>
-                    {integration.agents.map((a: any) => (
-                      <span key={a.id} className="badge badge-blue text-xs">{a.avatar} {a.name}</span>
-                    ))}
-                  </div>
+                {role === 'admin' ? (
+                  <select
+                    value={user.role_id}
+                    onChange={e => changeRole(user.id, e.target.value)}
+                    style={{
+                      background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6,
+                      padding: '4px 8px', fontSize: 12, color: 'var(--text-primary)',
+                    }}
+                  >
+                    {roles?.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                ) : (
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.role_name}</span>
                 )}
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Roles tab */}
-      {tab === 'roles' && (
-        <div className="space-y-6">
-          <div className="card">
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Users</h3>
-            </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {users?.map((user: any) => (
-                <div key={user.id} className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+          {/* Role permissions */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {roles?.map((r: any) => (
+              <div key={r.id} className="card" style={{ padding: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, textTransform: 'capitalize' }}>{r.name}</div>
+                {r.permissions.map((p: string) => (
+                  <div key={p} style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>
+                    · {p === '*' ? 'Full access' : p}
                   </div>
-                  <div className="flex items-center gap-3">
-                    {role === 'admin' ? (
-                      <select
-                        value={user.role_id}
-                        onChange={e => changeRole(user.id, e.target.value)}
-                        className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-kato-500"
-                      >
-                        {roles?.map((r: any) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="badge badge-blue">{user.role_name}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="card p-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Role Permissions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {roles?.map((r: any) => (
-                <div key={r.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <p className="font-medium text-gray-900 dark:text-white mb-2 capitalize">{r.name}</p>
-                  <div className="space-y-1">
-                    {r.permissions.map((p: string) => (
-                      <p key={p} className="text-xs text-gray-500 dark:text-gray-400">• {p === '*' ? 'Full access' : p}</p>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       )}

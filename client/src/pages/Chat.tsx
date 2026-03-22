@@ -12,7 +12,6 @@ interface ChatMessage {
     status: string
     agent: string | null
     agentName?: string
-    agentAvatar?: string
     task: string
     result?: any
     execution_plan?: any[]
@@ -33,26 +32,14 @@ interface TaskDetail {
   completed_at: string | null
 }
 
-const SUGGESTIONS = [
-  { text: 'Research Acme Corp', icon: '🔍' },
-  { text: 'Email John about the proposal', icon: '📧' },
-  { text: 'Slack the team about updates', icon: '💬' },
-  { text: 'Look up competitor pricing', icon: '📊' },
-]
-
-const AGENT_LABELS: Record<string, { name: string; avatar: string }> = {
-  'research-intern': { name: 'Research Intern', avatar: '🔍' },
-  'secretary-intern': { name: 'Secretary Intern', avatar: '📧' },
-}
-
-const STATUS_LABELS: Record<string, { color: string; label: string; dot: string }> = {
-  completed: { color: 'text-emerald-600 dark:text-emerald-400', label: 'Completed', dot: 'bg-emerald-500' },
-  running: { color: 'text-blue-600 dark:text-blue-400', label: 'Running...', dot: 'bg-blue-500 animate-pulse' },
-  processing: { color: 'text-blue-600 dark:text-blue-400', label: 'Processing...', dot: 'bg-blue-500 animate-pulse' },
-  needs_approval: { color: 'text-amber-600 dark:text-amber-400', label: 'Needs Approval', dot: 'bg-amber-500' },
-  needs_input: { color: 'text-amber-600 dark:text-amber-400', label: 'Needs Input', dot: 'bg-amber-500' },
-  failed: { color: 'text-red-500', label: 'Failed', dot: 'bg-red-400' },
-  pending: { color: 'text-gray-400', label: 'Queued', dot: 'bg-gray-300' },
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  completed: { label: 'Completed', color: '#34d399' },
+  running: { label: 'Running', color: '#5c7cfa' },
+  processing: { label: 'Processing', color: '#5c7cfa' },
+  needs_approval: { label: 'Needs approval', color: '#f59e0b' },
+  needs_input: { label: 'Needs input', color: '#f59e0b' },
+  failed: { label: 'Failed', color: '#ef4444' },
+  pending: { label: 'Queued', color: 'var(--text-muted)' },
 }
 
 export default function Chat() {
@@ -62,22 +49,19 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch active task details for the execution panel
   const { data: activeTask, refetch: refetchActiveTask } = useApi<TaskDetail>(
     activeTaskId ? `/tasks/${activeTaskId}` : '',
     [activeTaskId]
   )
 
-  // Poll for active task updates
   useEffect(() => {
     if (!activeTaskId) return
     const interval = setInterval(() => refetchActiveTask(), 3000)
     return () => clearInterval(interval)
   }, [activeTaskId, refetchActiveTask])
 
-  // Update task card status when activeTask changes
   useEffect(() => {
     if (!activeTask) return
     setMessages(prev => prev.map(m => {
@@ -90,13 +74,11 @@ export default function Chat() {
             result: activeTask.result,
             execution_plan: activeTask.execution_plan,
             agentName: activeTask.agent_name || m.taskData!.agentName,
-            agentAvatar: activeTask.agent_avatar || m.taskData!.agentAvatar,
           }
         }
       }
       return m
     }))
-    // Close panel when done
     if (['completed', 'failed'].includes(activeTask.status)) {
       setTimeout(() => setActiveTaskId(null), 5000)
     }
@@ -110,75 +92,43 @@ export default function Chat() {
     const t = taskText || input
     if (!t.trim() || loading) return
 
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      type: 'user',
-      text: t,
-      timestamp: new Date(),
-    }
-    setMessages(prev => [...prev, userMsg])
+    setMessages(prev => [...prev, {
+      id: `user-${Date.now()}`, type: 'user', text: t, timestamp: new Date(),
+    }])
     setInput('')
     setLoading(true)
 
-    // Show typing indicator
-    const typingMsg: ChatMessage = {
-      id: 'typing',
-      type: 'kato',
-      text: '',
-      timestamp: new Date(),
-    }
-    setMessages(prev => [...prev, typingMsg])
+    setMessages(prev => [...prev, { id: 'typing', type: 'kato', text: '', timestamp: new Date() }])
 
     try {
       const result = await apiPost<any>('/tasks', { task: t })
-      
-      // Remove typing indicator
       setMessages(prev => prev.filter(m => m.id !== 'typing'))
 
-      const agentInfo = AGENT_LABELS[result.agent] || { name: result.agent || 'Kato', avatar: '🧠' }
-
-      // Add Kato response
-      const katoMsg: ChatMessage = {
-        id: `kato-${Date.now()}`,
-        type: 'kato',
+      const agentName = result.agent || 'Kato'
+      setMessages(prev => [...prev, {
+        id: `kato-${Date.now()}`, type: 'kato',
         text: result.agent
-          ? `I've assigned this to **${agentInfo.name}**. They're on it now.`
-          : `I'm handling this directly. Let me work on it.`,
+          ? `Assigned to **${agentName}**. Working on it now.`
+          : `Handling this directly.`,
         timestamp: new Date(),
-      }
-      setMessages(prev => [...prev, katoMsg])
+      }])
 
-      // Add task execution card
-      const taskCard: ChatMessage = {
-        id: `task-${Date.now()}`,
-        type: 'task-card',
-        text: t,
-        timestamp: new Date(),
+      setMessages(prev => [...prev, {
+        id: `task-${Date.now()}`, type: 'task-card', text: t, timestamp: new Date(),
         taskData: {
-          workflowId: result.workflowId,
-          status: result.status,
-          agent: result.agent,
-          agentName: agentInfo.name,
-          agentAvatar: agentInfo.avatar,
-          task: t,
-          result: result.result,
-          execution_plan: result.execution_plan,
+          workflowId: result.workflowId, status: result.status,
+          agent: result.agent, agentName, task: t,
+          result: result.result, execution_plan: result.execution_plan,
         }
-      }
-      setMessages(prev => [...prev, taskCard])
+      }])
       setActiveTaskId(result.workflowId)
-
     } catch (err: any) {
-      // Remove typing indicator
       setMessages(prev => prev.filter(m => m.id !== 'typing'))
-      
-      const errorMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        type: 'kato',
-        text: `Something went wrong: ${err.message}. Want me to try again?`,
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`, type: 'kato',
+        text: `Error: ${err.message}`,
         timestamp: new Date(),
-      }
-      setMessages(prev => [...prev, errorMsg])
+      }])
     } finally {
       setLoading(false)
     }
@@ -194,78 +144,61 @@ export default function Chat() {
   const isEmpty = messages.length === 0
 
   return (
-    <div className="flex h-screen">
-      {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${activeTaskId && activeTask ? 'mr-96' : ''}`}>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', transition: 'margin-right 0.2s', marginRight: activeTaskId && activeTask ? 380 : 0 }}>
         {isEmpty ? (
-          /* Empty State - Claude-like welcome */
-          <div className="flex-1 flex items-center justify-center">
-            <div className="max-w-2xl w-full px-6">
-              <div className="text-center mb-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-kato-500 to-kato-700 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg mx-auto mb-5">K</div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-2">What can I help you with?</h1>
-                <p className="text-[14px] text-gray-400 dark:text-gray-500">I'll delegate tasks to your interns and keep everything on track.</p>
-              </div>
-
-              {/* Suggestions */}
-              <div className="grid grid-cols-2 gap-3 mb-8">
-                {SUGGESTIONS.map(s => (
-                  <button
-                    key={s.text}
-                    onClick={() => { setInput(s.text); submitTask(s.text) }}
-                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-150 dark:border-gray-800 bg-white dark:bg-gray-900/80 text-left hover:border-kato-200 dark:hover:border-kato-800 hover:shadow-sm transition-all group"
-                  >
-                    <span className="text-lg">{s.icon}</span>
-                    <span className="text-[13px] text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{s.text}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Input */}
-              <div className="relative">
-                <textarea
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 520, padding: '0 24px' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 20 }}>
+                Ask Kato anything
+              </p>
+              <div style={{ position: 'relative' }}>
+                <input
                   ref={inputRef}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Describe what you need done..."
-                  rows={1}
-                  className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 pr-14 text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-kato-400 dark:focus:border-kato-500 transition-all shadow-sm resize-none"
+                  style={{
+                    width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
+                    borderRadius: 8, padding: '12px 44px 12px 14px', fontSize: 13,
+                    color: 'var(--text-primary)', outline: 'none',
+                  }}
                   disabled={loading}
-                  style={{ minHeight: '56px', maxHeight: '200px' }}
                 />
                 <button
                   onClick={() => submitTask()}
                   disabled={loading || !input.trim()}
-                  className="absolute right-3 bottom-3 w-10 h-10 flex items-center justify-center rounded-xl bg-kato-600 hover:bg-kato-700 text-white transition-all disabled:opacity-30 disabled:hover:bg-kato-600 shadow-sm"
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    width: 32, height: 32, borderRadius: 6, background: '#5c7cfa',
+                    color: '#fff', border: 'none', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    opacity: loading || !input.trim() ? 0.3 : 1,
+                  }}
                 >
                   {loading ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+                    <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite' }} />
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-                    </svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                   )}
                 </button>
               </div>
             </div>
           </div>
         ) : (
-          /* Chat Messages */
           <>
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-6 py-8 space-y-5">
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <div style={{ maxWidth: 640, margin: '0 auto', padding: '24px 24px' }}>
                 {messages.map(msg => {
                   if (msg.id === 'typing') {
                     return (
-                      <div key="typing" className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-kato-500 to-kato-700 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0">K</div>
-                        <div className="bg-gray-100 dark:bg-gray-800/80 rounded-2xl rounded-tl-md px-4 py-3">
-                          <div className="flex gap-1.5">
-                            <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </div>
+                      <div key="typing" style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'flex-start' }}>
+                        <KatoAvatar />
+                        <div style={{ background: 'var(--surface)', borderRadius: '8px 8px 8px 2px', padding: '10px 14px', display: 'flex', gap: 4 }}>
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.2s ease-in-out infinite' }} />
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.2s ease-in-out 0.2s infinite' }} />
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.2s ease-in-out 0.4s infinite' }} />
                         </div>
                       </div>
                     )
@@ -273,10 +206,14 @@ export default function Chat() {
 
                   if (msg.type === 'user') {
                     return (
-                      <div key={msg.id} className="flex justify-end">
-                        <div className="max-w-[75%] bg-kato-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
-                          <p className="text-[14px] leading-relaxed">{msg.text}</p>
-                          <p className="text-[10px] text-kato-200 mt-1.5">
+                      <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                        <div style={{
+                          maxWidth: '75%', background: 'rgba(92,124,250,0.15)',
+                          color: 'var(--text-primary)', borderRadius: '8px 8px 2px 8px',
+                          padding: '10px 14px',
+                        }}>
+                          <p style={{ fontSize: 13, lineHeight: 1.5 }}>{msg.text}</p>
+                          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
                             {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -286,11 +223,15 @@ export default function Chat() {
 
                   if (msg.type === 'kato') {
                     return (
-                      <div key={msg.id} className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-kato-500 to-kato-700 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0">K</div>
-                        <div className="max-w-[75%] bg-gray-100 dark:bg-gray-800/80 rounded-2xl rounded-tl-md px-4 py-3 border border-gray-100 dark:border-gray-700/40">
-                          <p className="text-[14px] text-gray-700 dark:text-gray-300 leading-relaxed">{renderMarkdownLight(msg.text)}</p>
-                          <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5">
+                      <div key={msg.id} style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'flex-start' }}>
+                        <KatoAvatar />
+                        <div style={{
+                          maxWidth: '75%', background: 'var(--surface)',
+                          borderRadius: '8px 8px 8px 2px', padding: '10px 14px',
+                          border: '1px solid var(--border)',
+                        }}>
+                          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>{renderBold(msg.text)}</p>
+                          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
                             {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -300,97 +241,62 @@ export default function Chat() {
 
                   if (msg.type === 'task-card' && msg.taskData) {
                     const td = msg.taskData
-                    const statusInfo = STATUS_LABELS[td.status] || STATUS_LABELS.pending
+                    const st = STATUS_MAP[td.status] || STATUS_MAP.pending
                     const isRunning = ['running', 'processing', 'pending'].includes(td.status)
                     const isDone = td.status === 'completed'
-                    const needsAction = ['needs_approval', 'needs_input'].includes(td.status)
 
                     return (
-                      <div key={msg.id} className="flex items-start gap-3">
-                        <div className="w-8 h-8 flex-shrink-0" /> {/* spacer for alignment */}
-                        <div className="max-w-[85%] w-full">
-                          <div className={`rounded-2xl border overflow-hidden transition-all ${
-                            needsAction 
-                              ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/10' 
-                              : isDone
-                                ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10'
-                                : 'border-gray-150 dark:border-gray-800 bg-white dark:bg-gray-900/80'
-                          }`}>
-                            {/* Card Header */}
-                            <div className="px-4 py-3 flex items-center gap-3">
-                              <span className="text-lg">{td.agentAvatar || '🧠'}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium text-gray-800 dark:text-gray-200">
-                                  {td.agentName || 'Kato'} {isRunning ? 'is working on this...' : isDone ? 'finished' : needsAction ? 'needs your attention' : ''}
-                                </p>
-                                <p className="text-[12px] text-gray-400 dark:text-gray-500 truncate">{td.task}</p>
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <span className={`w-2 h-2 rounded-full ${statusInfo.dot}`} />
-                                <span className={`text-[11px] font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
-                              </div>
+                      <div key={msg.id} style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'flex-start' }}>
+                        <div style={{ width: 24, flexShrink: 0 }} />
+                        <div style={{
+                          flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
+                          borderRadius: 8, overflow: 'hidden',
+                        }}>
+                          {/* Header */}
+                          <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{td.agentName || 'Kato'}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{td.task}</span>
                             </div>
-
-                            {/* Progress bar for running tasks */}
-                            {isRunning && (
-                              <div className="px-4 pb-3">
-                                <div className="w-full h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                  <div className="h-full bg-kato-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Execution Plan Steps (compact) */}
-                            {td.execution_plan && td.execution_plan.length > 0 && (
-                              <div className="px-4 pb-3 space-y-1.5">
-                                {td.execution_plan.slice(0, 4).map((step: any, i: number) => {
-                                  const stepStyle = STATUS_LABELS[step.status] || STATUS_LABELS.pending
-                                  return (
-                                    <div key={step.id || i} className="flex items-center gap-2">
-                                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${stepStyle.dot}`} />
-                                      <span className="text-[12px] text-gray-500 dark:text-gray-400">{step.description || step.action}</span>
-                                    </div>
-                                  )
-                                })}
-                                {td.execution_plan.length > 4 && (
-                                  <p className="text-[11px] text-gray-300 dark:text-gray-600 pl-3.5">+{td.execution_plan.length - 4} more steps</p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Result Summary */}
-                            {isDone && td.result && (
-                              <div className="px-4 pb-3">
-                                {td.result.summary && (
-                                  <p className="text-[13px] text-gray-600 dark:text-gray-400 leading-relaxed">{td.result.summary}</p>
-                                )}
-                                {td.result.keyFindings && (
-                                  <ul className="mt-2 space-y-1">
-                                    {td.result.keyFindings.slice(0, 3).map((f: string, i: number) => (
-                                      <li key={i} className="text-[12px] text-gray-500 dark:text-gray-400 flex items-start gap-2">
-                                        <span className="text-kato-500 mt-0.5 flex-shrink-0">•</span>{f}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Footer */}
-                            <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between">
-                              <button
-                                onClick={() => setActiveTaskId(td.workflowId)}
-                                className="text-[12px] text-gray-400 dark:text-gray-500 hover:text-kato-500 dark:hover:text-kato-400 transition-colors"
-                              >
-                                Show details →
-                              </button>
-                              <button
-                                onClick={() => navigate(`/task/${td.workflowId}`)}
-                                className="text-[12px] text-kato-500 hover:text-kato-600 font-medium transition-colors"
-                              >
-                                Full view →
-                              </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color }} />
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{st.label}</span>
                             </div>
+                          </div>
+
+                          {/* Steps compact */}
+                          {td.execution_plan && td.execution_plan.length > 0 && (
+                            <div style={{ padding: '0 14px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {td.execution_plan.slice(0, 3).map((step: any, i: number) => {
+                                const sts = STATUS_MAP[step.status] || STATUS_MAP.pending
+                                return (
+                                  <div key={step.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: sts.color, flexShrink: 0 }} />
+                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{step.description || step.action}</span>
+                                  </div>
+                                )
+                              })}
+                              {td.execution_plan.length > 3 && (
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 10 }}>+{td.execution_plan.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Result */}
+                          {isDone && td.result?.summary && (
+                            <div style={{ padding: '0 14px 10px' }}>
+                              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{td.result.summary}</p>
+                            </div>
+                          )}
+
+                          {/* Footer */}
+                          <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                            <button onClick={() => setActiveTaskId(td.workflowId)} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                              Details
+                            </button>
+                            <button onClick={() => navigate(`/task/${td.workflowId}`)} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>
+                              Full view →
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -403,33 +309,35 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Bottom Input */}
-            <div className="border-t border-gray-100 dark:border-gray-800/60 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
-              <div className="max-w-3xl mx-auto px-6 py-4">
-                <div className="relative">
-                  <textarea
+            {/* Bottom input */}
+            <div style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+              <div style={{ maxWidth: 640, margin: '0 auto', padding: '12px 24px' }}>
+                <div style={{ position: 'relative' }}>
+                  <input
                     ref={inputRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Tell Kato what you need..."
-                    rows={1}
-                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-3.5 pr-14 text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-kato-400 dark:focus:border-kato-500 transition-all resize-none"
+                    style={{
+                      width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
+                      borderRadius: 8, padding: '10px 44px 10px 14px', fontSize: 13,
+                      color: 'var(--text-primary)', outline: 'none',
+                    }}
                     disabled={loading}
-                    style={{ minHeight: '48px', maxHeight: '200px' }}
                   />
                   <button
                     onClick={() => submitTask()}
                     disabled={loading || !input.trim()}
-                    className="absolute right-2.5 bottom-2.5 w-9 h-9 flex items-center justify-center rounded-xl bg-kato-600 hover:bg-kato-700 text-white transition-all disabled:opacity-30 disabled:hover:bg-kato-600"
+                    style={{
+                      position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                      width: 28, height: 28, borderRadius: 6, background: '#5c7cfa',
+                      color: '#fff', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: loading || !input.trim() ? 0.3 : 1,
+                    }}
                   >
-                    {loading ? (
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-                      </svg>
-                    )}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                   </button>
                 </div>
               </div>
@@ -438,7 +346,7 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Execution Panel - slides in from right */}
+      {/* Execution Panel */}
       {activeTaskId && activeTask && (
         <ExecutionPanel
           task={activeTask}
@@ -450,74 +358,74 @@ export default function Chat() {
   )
 }
 
+function KatoAvatar() {
+  return (
+    <div style={{
+      width: 24, height: 24, borderRadius: 6, background: '#5c7cfa',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: '#fff', fontWeight: 700, fontSize: 11, flexShrink: 0,
+    }}>K</div>
+  )
+}
+
 function ExecutionPanel({ task, onClose, onNavigate }: { task: TaskDetail; onClose: () => void; onNavigate: () => void }) {
   const plan = task.execution_plan || []
   const completedSteps = plan.filter((s: any) => s.status === 'completed').length
-  const progress = plan.length > 0 ? Math.round((completedSteps / plan.length) * 100) : 0
 
   return (
-    <aside className="w-96 bg-white dark:bg-gray-900/95 border-l border-gray-100 dark:border-gray-800/60 fixed right-0 top-0 h-full z-20 flex flex-col animate-slide-in">
+    <aside style={{
+      width: 380, background: 'var(--surface)', borderLeft: '1px solid var(--border)',
+      position: 'fixed', right: 0, top: 0, height: '100vh', zIndex: 20,
+      display: 'flex', flexDirection: 'column',
+    }}>
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-lg">{task.agent_avatar || '🧠'}</span>
-          <div className="min-w-0">
-            <h2 className="text-[13px] font-semibold text-gray-900 dark:text-white truncate">{task.agent_name || 'Kato'}</h2>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">
-              {task.status === 'completed' ? 'Completed' : task.status === 'failed' ? 'Failed' : 'Working...'}
-            </p>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{task.agent_name || 'Kato'}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {task.status === 'completed' ? 'Completed' : task.status === 'failed' ? 'Failed' : 'Working...'}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={onNavigate}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs"
-            title="Full view"
-          >↗</button>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs"
-          >✕</button>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={onNavigate} style={{ width: 24, height: 24, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>↗</button>
+          <button onClick={onClose} style={{ width: 24, height: 24, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
         </div>
       </div>
 
       {/* Task */}
-      <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800/60">
-        <p className="text-[13px] text-gray-700 dark:text-gray-300 leading-relaxed">{task.task}</p>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        {task.task}
       </div>
 
       {/* Progress */}
-      <div className="px-5 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress</span>
-          <span className="text-[11px] text-gray-400">{completedSteps}/{plan.length}</span>
+      <div style={{ padding: '10px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Progress</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{completedSteps}/{plan.length}</span>
         </div>
-        <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-kato-500 to-kato-600 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+        <div style={{ width: '100%', height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+          <div style={{ height: '100%', background: '#5c7cfa', borderRadius: 2, width: plan.length > 0 ? `${(completedSteps / plan.length) * 100}%` : '0%', transition: 'width 0.3s' }} />
         </div>
       </div>
 
       {/* Steps */}
-      <div className="flex-1 overflow-y-auto px-5 py-2 space-y-0">
+      <div style={{ flex: 1, overflow: 'auto', padding: '4px 16px' }}>
         {plan.map((step: any, i: number) => {
+          const st = STATUS_MAP[step.status] || STATUS_MAP.pending
           const isLast = i === plan.length - 1
-          const stepStatus = STATUS_LABELS[step.status] || STATUS_LABELS.pending
           return (
-            <div key={step.id || i} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${stepStatus.dot}`} />
-                {!isLast && <div className="w-px flex-1 bg-gray-100 dark:bg-gray-800 my-1" />}
+            <div key={step.id || i} style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, marginTop: 4, flexShrink: 0 }} />
+                {!isLast && <div style={{ width: 1, flex: 1, background: 'var(--border)', margin: '4px 0' }} />}
               </div>
-              <div className="flex-1 pb-4">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-sm">{step.agentAvatar || '🤖'}</span>
-                  <span className="text-[12px] font-semibold text-gray-800 dark:text-gray-200">{step.action}</span>
-                </div>
-                <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed">{step.description}</p>
-                {step.tools && step.tools.length > 0 && (
-                  <div className="flex gap-1 mt-1.5">
+              <div style={{ paddingBottom: 14, flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{step.action}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{step.description}</div>
+                {step.tools?.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                     {step.tools.map((t: string) => (
-                      <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-mono">{t}</span>
+                      <span key={t} style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: 'var(--hover-bg)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{t}</span>
                     ))}
                   </div>
                 )}
@@ -529,16 +437,14 @@ function ExecutionPanel({ task, onClose, onNavigate }: { task: TaskDetail; onClo
 
       {/* Result */}
       {task.result && (
-        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800/60 max-h-48 overflow-y-auto">
-          <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Result</p>
-          {task.result.summary && (
-            <p className="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed">{task.result.summary}</p>
-          )}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', maxHeight: 180, overflow: 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Result</div>
+          {task.result.summary && <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{task.result.summary}</p>}
           {task.result.keyFindings && (
-            <ul className="mt-2 space-y-1">
-              {task.result.keyFindings.slice(0, 5).map((f: string, i: number) => (
-                <li key={i} className="text-[11px] text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
-                  <span className="text-kato-500 mt-0.5 flex-shrink-0">•</span>{f}
+            <ul style={{ marginTop: 6, listStyle: 'none', padding: 0 }}>
+              {task.result.keyFindings.slice(0, 4).map((f: string, i: number) => (
+                <li key={i} style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2, paddingLeft: 10, position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 0, color: 'var(--accent)' }}>·</span>{f}
                 </li>
               ))}
             </ul>
@@ -546,12 +452,8 @@ function ExecutionPanel({ task, onClose, onNavigate }: { task: TaskDetail; onClo
         </div>
       )}
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800/60">
-        <button
-          onClick={onNavigate}
-          className="w-full text-[12px] text-kato-500 hover:text-kato-600 font-medium transition-colors text-center py-1.5"
-        >
+      <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)' }}>
+        <button onClick={onNavigate} style={{ width: '100%', fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, padding: '6px 0' }}>
           Open full task view →
         </button>
       </div>
@@ -559,12 +461,11 @@ function ExecutionPanel({ task, onClose, onNavigate }: { task: TaskDetail; onClo
   )
 }
 
-function renderMarkdownLight(text: string) {
-  // Very simple bold text rendering
+function renderBold(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/)
   return parts.map((part, i) =>
     i % 2 === 1
-      ? <strong key={i} className="font-semibold">{part}</strong>
+      ? <strong key={i} style={{ fontWeight: 600 }}>{part}</strong>
       : <span key={i}>{part}</span>
   )
 }
