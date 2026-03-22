@@ -76,6 +76,15 @@
   animation: attention-glow 3s ease-in-out infinite;
 }
 
+/* Slide in from right */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Line clamp */
 .line-clamp-2 {
   display: -webkit-box;
@@ -99,4 +108,12 @@
 input:focus, textarea:focus, select:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+}
+
+/* Custom border color for border-gray-150 */
+.border-gray-150 {
+  border-color: rgb(229, 231, 235);
+}
+.dark .border-gray-150 {
+  border-color: rgb(55, 65, 81);
 }

@@ -61,10 +61,10 @@ export default function TaskDetail() {
   const progress = plan.length > 0 ? Math.round((completedSteps / plan.length) * 100) : 0
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl px-8 py-6">
       {/* Back */}
-      <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-5 transition-colors">
-        ← Back to Board
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-5 transition-colors">
+        ← Back
       </button>
 
       {/* Header */}
@@ -80,13 +80,12 @@ export default function TaskDetail() {
             }`}>{task.status.replace(/_/g, ' ')}</span>
             {task.priority === 'high' && <span className="badge badge-red">urgent</span>}
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">{task.task}</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">{task.task}</h1>
           <p className="text-[13px] text-gray-400 dark:text-gray-500 mt-1">
             {task.agent_name || 'Kato'} • Started {new Date(task.started_at + 'Z').toLocaleString()}
           </p>
         </div>
 
-        {/* Actions */}
         {task.status === 'needs_approval' && (
           <div className="flex gap-2">
             <button onClick={handleApprove} className="text-[13px] bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-medium transition-all">Approve</button>
@@ -108,20 +107,17 @@ export default function TaskDetail() {
               <div className="h-full bg-gradient-to-r from-kato-500 to-kato-600 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
 
-            {/* Steps */}
             <div className="space-y-0">
               {plan.map((step, i) => {
                 const style = STATUS_STYLES[step.status] || STATUS_STYLES.pending
                 const isLast = i === plan.length - 1
                 return (
                   <div key={step.id} className="flex gap-3">
-                    {/* Timeline */}
                     <div className="flex flex-col items-center">
                       <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${style.dot}`} />
                       {!isLast && <div className="w-px flex-1 bg-gray-100 dark:bg-gray-800 my-1" />}
                     </div>
-                    {/* Content */}
-                    <div className={`flex-1 pb-4 ${isLast ? '' : ''}`}>
+                    <div className="flex-1 pb-4">
                       <div className={`rounded-xl p-3 ${style.bg} transition-all`}>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-sm">{step.agentAvatar}</span>
@@ -204,14 +200,13 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
                     m.role === 'user'
-                      ? 'bg-kato-600 text-white'
-                      : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-700/40'
+                      ? 'bg-kato-600 text-white rounded-tr-md'
+                      : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-700/40 rounded-tl-md'
                   }`}>
                     <p className="text-[13px] leading-relaxed">{m.message}</p>
                     <p className={`text-[10px] mt-1 ${m.role === 'user' ? 'text-kato-200' : 'text-gray-300 dark:text-gray-600'}`}>
@@ -223,7 +218,6 @@ export default function TaskDetail() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input */}
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60">
               <div className="relative">
                 <input
@@ -294,7 +288,7 @@ function InputForm({ taskId, fields, onSubmit }: { taskId: string; fields: any[]
 
 function DetailSkeleton() {
   return (
-    <div className="animate-pulse max-w-6xl">
+    <div className="animate-pulse max-w-6xl px-8 py-6">
       <div className="h-5 w-32 bg-gray-100 dark:bg-gray-800 rounded-lg mb-5" />
       <div className="h-8 w-96 bg-gray-100 dark:bg-gray-800 rounded-lg mb-6" />
       <div className="grid grid-cols-5 gap-6">

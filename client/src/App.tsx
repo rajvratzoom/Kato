@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { useState, createContext, useContext } from 'react'
 import Layout from './components/Layout'
+import Chat from './pages/Chat'
 import KanbanBoard from './pages/KanbanBoard'
 import TaskDetail from './pages/TaskDetail'
 import Agents from './pages/Agents'
@@ -15,8 +16,8 @@ interface AppContextType {
   setRole: (r: Role) => void
   darkMode: boolean
   toggleDarkMode: () => void
-  commandPanelOpen: boolean
-  setCommandPanelOpen: (open: boolean) => void
+  sidebarCollapsed: boolean
+  setSidebarCollapsed: (v: boolean) => void
 }
 
 export const AppContext = createContext<AppContextType>({
@@ -24,8 +25,8 @@ export const AppContext = createContext<AppContextType>({
   setRole: () => {},
   darkMode: false,
   toggleDarkMode: () => {},
-  commandPanelOpen: true,
-  setCommandPanelOpen: () => {},
+  sidebarCollapsed: false,
+  setSidebarCollapsed: () => {},
 })
 
 export const useAppContext = () => useContext(AppContext)
@@ -38,18 +39,17 @@ export default function App() {
     }
     return false
   })
-  const [commandPanelOpen, setCommandPanelOpen] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  const toggleDarkMode = () => {
-    setDarkMode(d => !d)
-  }
+  const toggleDarkMode = () => setDarkMode(d => !d)
 
   return (
-    <AppContext.Provider value={{ role, setRole, darkMode, toggleDarkMode, commandPanelOpen, setCommandPanelOpen }}>
+    <AppContext.Provider value={{ role, setRole, darkMode, toggleDarkMode, sidebarCollapsed, setSidebarCollapsed }}>
       <div className={darkMode ? 'dark' : ''}>
         <Layout>
           <Routes>
-            <Route path="/" element={<KanbanBoard />} />
+            <Route path="/" element={<Chat />} />
+            <Route path="/board" element={<KanbanBoard />} />
             <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/admin" element={<AdminConsole />} />

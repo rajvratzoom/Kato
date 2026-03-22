@@ -42,10 +42,10 @@ export default function AdminConsole() {
   ]
 
   return (
-    <div>
+    <div className="px-8 py-6 max-w-[1400px]">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Console</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage agents, integrations, and access control</p>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Admin Console</h1>
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Manage agents, integrations, and access control</p>
       </div>
 
       {/* Tabs */}

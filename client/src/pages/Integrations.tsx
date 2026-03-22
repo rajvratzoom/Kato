@@ -52,10 +52,10 @@ export default function Integrations() {
   if (loading) return <div className="animate-pulse"><div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded mb-8" /><div className="grid grid-cols-3 gap-6">{[1,2,3,4,5,6].map(i => <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 rounded-xl" />)}</div></div>
 
   return (
-    <div>
+    <div className="px-8 py-6 max-w-[1400px]">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Integrations</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your tool connections</p>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Integrations</h1>
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Manage your tool connections</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -23,10 +23,10 @@ export default function KanbanBoard() {
   if (loading) return <KanbanSkeleton />
 
   return (
-    <div className="h-full">
+    <div className="h-full px-8 py-6 max-w-[1400px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Board</h1>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Board</h1>
         <div className="flex items-center gap-5 text-[13px]">
           <Stat label="Tasks" value={stats?.totalWorkflows || 0} />
           <Stat label="Success" value={`${stats?.successRate || 0}%`} color="text-emerald-600 dark:text-emerald-400" />
@@ -125,7 +125,6 @@ function ActionCard({ task, onAction }: { task: any; onAction: () => void }) {
 
   return (
     <div className="bg-white dark:bg-gray-800/80 rounded-xl border border-amber-200/60 dark:border-amber-800/30 transition-all hover:border-amber-300/80 dark:hover:border-amber-700/40">
-      {/* Header */}
       <div className="p-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5">
@@ -148,7 +147,6 @@ function ActionCard({ task, onAction }: { task: any; onAction: () => void }) {
         )}
       </div>
 
-      {/* Expanded */}
       {expanded && (
         <div className="px-3 pb-3 pt-1 border-t border-gray-100/80 dark:border-gray-700/30">
           {isApproval && task.result && (
@@ -220,7 +218,7 @@ function ActionCard({ task, onAction }: { task: any; onAction: () => void }) {
 
 function KanbanSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse px-8 py-6">
       <div className="flex items-center justify-between mb-5">
         <div className="h-7 w-20 bg-gray-100 dark:bg-gray-800 rounded-lg" />
         <div className="h-5 w-48 bg-gray-100 dark:bg-gray-800 rounded-lg" />
